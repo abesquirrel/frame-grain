@@ -1954,8 +1954,13 @@ function buildRecipePickList() {
 
 function selectRecipe(idx) {
   const recipes = state.recipes
-  DR.recipe = { ...recipes[idx] }
-  DR._originalRecipe = { ...recipes[idx] }
+  const base = recipes[idx]
+  // Normalize sim_slug if missing
+  if (!base.sim_slug && base.sim_name) {
+    base.sim_slug = slugify(base.sim_name)
+  }
+  DR.recipe = { ...base }
+  DR._originalRecipe = { ...base }
   document.querySelectorAll('.recipe-pick-item').forEach((el, i) => {
     el.classList.toggle('active', i === idx)
   })
@@ -1981,11 +1986,27 @@ function showActiveRecipePanel(r) {
       </div>
     </div>`
 
+  const simOpts = [
+    { label: 'Classic Chrome', slug: 'classic-chrome' },
+    { label: 'Classic Negative', slug: 'classic-neg' },
+    { label: 'Provia / Standard', slug: 'provia' },
+    { label: 'Velvia / Vivid', slug: 'velvia' },
+    { label: 'Astia / Soft', slug: 'astia' },
+    { label: 'Acros', slug: 'acros' },
+    { label: 'Monochrome', slug: 'monochrome' },
+    { label: 'Eterna / Cinema', slug: 'eterna' },
+    { label: 'Bleach Bypass', slug: 'bleach-bypass' },
+    { label: 'Nostalgic Negative', slug: 'nostalgic-neg' },
+    { label: 'REALA ACE', slug: 'reala-ace' },
+    { label: 'Pro Neg. Hi', slug: 'pro-neg-hi' },
+    { label: 'Pro Neg. Std', slug: 'pro-neg-std' }
+  ]
+
   const selField = (label, key, opts) => `
     <div class="recipe-edit-field">
       <label class="recipe-edit-label">${label}</label>
       <select class="recipe-edit-sel" onchange="updateRecipeParam('${key}', this.value)">
-        ${opts.map(o => `<option${r[key] === o ? ' selected' : ''}>${o}</option>`).join('')}
+        ${opts.map(o => `<option value="${o.slug ?? o}" ${ (r[key] === (o.slug ?? o)) ? 'selected' : ''}>${o.label ?? o}</option>`).join('')}
       </select>
     </div>`
 
@@ -1993,7 +2014,7 @@ function showActiveRecipePanel(r) {
     <div style="font-size:0.7rem;color:var(--text3);margin-bottom:10px">Edit any parameter to customize the simulation in real time.</div>
     <div class="recipe-edit-group">
       <div class="recipe-edit-group-title">Film Simulation</div>
-      ${selField('Simulation', 'base_sim', ['Classic Chrome','Classic Negative','Provia','Velvia','Astia','Acros','Monochrome','Eterna','Bleach Bypass','Nostalgic Negative','REALA ACE','Pro Neg. Hi','Pro Neg. Std'])}
+      ${selField('Simulation', 'sim_slug', simOpts)}
       ${selField('Dynamic Range', 'dynamic_range', ['DR100','DR200','DR400','DRAuto'])}
     </div>
     <div class="recipe-edit-group">
@@ -2269,6 +2290,8 @@ function _renderCanvasOnly() {
   if (!DR.processedCache) return
   const { origBitmap } = DR.images[DR.activeIdx]
   const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
   const w = canvas.width, h = canvas.height
   const splitPx = Math.floor(w * DR.splitX)
 
@@ -2306,6 +2329,8 @@ function renderOriginal(bitmap, canvas) {
 function renderToCanvas(bitmap, canvas, recipe, intensity) {
   fitCanvas(canvas, bitmap)
   const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
 
   if (!recipe || intensity === 0) return
