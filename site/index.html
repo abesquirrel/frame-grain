@@ -1995,13 +1995,13 @@ function _doRender() {
 
 function renderOriginal(bitmap, canvas) {
   fitCanvas(canvas, bitmap)
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
 }
 
 function renderToCanvas(bitmap, canvas, recipe, intensity) {
   fitCanvas(canvas, bitmap)
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
 
   if (!recipe || intensity === 0) return
@@ -2013,7 +2013,7 @@ function renderToCanvas(bitmap, canvas, recipe, intensity) {
 
 function renderSplit(bitmap, canvas, recipe, intensity, splitX) {
   fitCanvas(canvas, bitmap)
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
   const w = canvas.width, h = canvas.height
   const splitPx = Math.floor(w * splitX)
 
