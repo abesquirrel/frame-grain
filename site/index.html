@@ -665,10 +665,10 @@ nav button.active { color: var(--accent); }
 .dr-filename { font-size: 0.65rem; color: var(--text3); margin-left: auto; }
 
 /* Multi-image strip below canvas */
-.dr-multistrip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; width: 100%; }
+.dr-multistrip { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; margin-top: 16px; width: 100%; padding-bottom: 8px; }
 .dr-strip-item {
   position: relative; border-radius: var(--radius);
-  overflow: hidden; cursor: pointer;
+  overflow: hidden; cursor: pointer; flex-shrink: 0;
   border: 1.5px solid var(--border);
   transition: border-color 0.15s;
 }
@@ -682,6 +682,69 @@ nav button.active { color: var(--accent); }
   background: rgba(0,0,0,0.7); color: var(--text2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+@media (max-width: 860px) {
+  .darkroom-layout { grid-template-columns: 1fr; }
+  .dr-panel { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+  .dr-stage { padding: 20px 12px; }
+  .dr-panel-section { padding: 16px; }
+}
+
+/* ── MOBILE OPTIMIZATIONS ────────────────────────────────── */
+@media (max-width: 768px) {
+  html { font-size: 13px; }
+  header { height: 48px; }
+  .header-inner { height: 48px; }
+  nav { display: none; } /* Hide top nav, use bottom mobile nav */
+  .mobile-nav { display: flex !important; }
+  
+  .hero { grid-template-columns: 1fr; padding: 40px 20px 32px; gap: 24px; text-align: center; }
+  .hero-headline { font-size: 2.8rem; }
+  .hero-stats { justify-content: center; gap: 20px; }
+  .stat-num { font-size: 1.85rem; }
+  
+  .filter-bar { top: 48px; }
+  .filter-inner { padding: 8px 16px; gap: 6px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .filter-chip { padding: 4px 10px; font-size: 0.68rem; }
+  .sort-btns { display: none; }
+  
+  .grid-wrapper { grid-template-columns: 1fr; gap: 1px; }
+  .recipe-card { padding: 20px; }
+  
+  .modal { max-height: 95vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; position: fixed; bottom: 0; transform: translateY(100%); }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .detail-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  
+  .form-grid { grid-template-columns: 1fr; gap: 16px; }
+  .btn-row { flex-direction: column; width: 100%; }
+  .btn-row button { width: 100%; }
+  
+  #submit-view, #about-view { padding: 32px 16px 100px; }
+  
+  .dr-panel { border-bottom: none; }
+  .dr-actions { flex-direction: column; align-items: stretch; }
+  .dr-filename { margin-left: 0; text-align: center; margin-top: 4px; }
+  
+  body { padding-bottom: 64px; } /* Space for mobile nav */
+}
+
+.mobile-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 64px; background: rgba(12,11,9,0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  display: none; align-items: center; justify-content: space-around;
+  padding: 0 12px; z-index: 1000;
+}
+.m-nav-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: none; color: var(--text3);
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+  text-transform: uppercase; cursor: pointer; transition: 0.2s;
+  flex: 1;
+}
+.m-nav-btn.active { color: var(--accent); }
+.m-nav-icon { font-size: 1.4rem; line-height: 1; }
 
 /* Processing overlay */
 .processing-overlay {
@@ -743,22 +806,10 @@ nav button.active { color: var(--accent); }
 .share-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 500; grid-column: 1/-1; }
 .share-btn.primary:hover { opacity: 0.88; }
 
-@media (max-width: 860px) {
-  .darkroom-layout { grid-template-columns: 1fr; }
-  .dr-panel { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
-  .dr-stage { padding: 20px 16px; }
-}
-
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
 
-/* ── RESPONSIVE ──────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .hero { grid-template-columns: 1fr; padding: 40px 24px 32px; }
-  .form-grid { grid-template-columns: 1fr; }
-  .detail-grid { grid-template-columns: 1fr 1fr; }
-}
 </style>
 </head>
 <body>
@@ -775,6 +826,22 @@ nav button.active { color: var(--accent); }
     </nav>
   </div>
 </header>
+
+<div class="mobile-nav">
+  <button class="m-nav-btn active" id="m-nav-browse" onclick="showView('browse')">
+    <span class="m-nav-icon">⊞</span>
+    <span>Browse</span>
+  </button>
+  <button class="m-nav-btn" id="m-nav-darkroom" onclick="showView('darkroom')">
+    <span class="m-nav-icon">▣</span>
+    <span>Try</span>
+  </button>
+  <button class="m-nav-btn" id="m-nav-submit" onclick="showView('submit')">
+    <span class="m-nav-icon">＋</span>
+    <span>Submit</span>
+  </button>
+</div>
+
 
 <!-- ── HERO ──────────────────────────────────────────────── -->
 <div id="hero-block">
@@ -1272,6 +1339,7 @@ function showView(view) {
   document.getElementById('hero-block').style.display = view === 'browse' ? '' : 'none'
   ;['browse','darkroom','submit','about'].forEach(v => {
     document.getElementById(`nav-${v}`)?.classList.toggle('active', v === view)
+    document.getElementById(`m-nav-${v}`)?.classList.toggle('active', v === view)
   })
   if (view === 'submit') buildIntFields()
   if (view === 'browse') renderRecipes()
@@ -1700,10 +1768,10 @@ const DR = {
   recipe: null,        // currently selected recipe object
   intensity: 1.0,      // 0–1 blend amount
   previewMode: 'after',// 'before' | 'after' | 'split'
-  splitX: 0.5,         // split position 0–1
   draggingSplit: false,
   renderedBlob: null,  // last rendered output blob
   stripCanvases: [],   // small canvases for multi-image strip
+  processedCache: null, // Off-screen canvas holding full simulation (for smooth split drag)
 }
 
 // ─── INIT ────────────────────────────────────────────────────
@@ -1906,16 +1974,16 @@ function setupSplitDrag() {
   const line    = document.getElementById('split-line')
   const wrapper = document.getElementById('canvas-wrapper')
 
-  line.addEventListener('mousedown', e => {
+    line.addEventListener('mousedown', e => {
     DR.draggingSplit = true
     e.preventDefault()
   })
   document.addEventListener('mousemove', e => {
     if (!DR.draggingSplit) return
     const rect = wrapper.getBoundingClientRect()
-    DR.splitX = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width))
+    DR.splitX = Math.max(0.01, Math.min(0.99, (e.clientX - rect.left) / rect.width))
     line.style.left = (DR.splitX * 100) + '%'
-    renderFrame()
+    _renderCanvasOnly() // Ultra-fast drag render (no pixel manipulation)
   })
   document.addEventListener('mouseup', () => { DR.draggingSplit = false })
 
@@ -1925,9 +1993,9 @@ function setupSplitDrag() {
     if (!DR.draggingSplit) return
     const rect = wrapper.getBoundingClientRect()
     const t = e.touches[0]
-    DR.splitX = Math.max(0.05, Math.min(0.95, (t.clientX - rect.left) / rect.width))
+    DR.splitX = Math.max(0.01, Math.min(0.99, (t.clientX - rect.left) / rect.width))
     line.style.left = (DR.splitX * 100) + '%'
-    renderFrame()
+    _renderCanvasOnly()
   }, { passive: false })
   document.addEventListener('touchend', () => { DR.draggingSplit = false })
 }
@@ -1969,20 +2037,20 @@ function _doRender() {
   // Use requestAnimationFrame to not block UI
   requestAnimationFrame(() => {
     try {
-      if (DR.previewMode === 'before') {
-        renderOriginal(origBitmap, canvas)
-      } else if (DR.previewMode === 'after') {
-        renderToCanvas(origBitmap, canvas, DR.recipe, DR.intensity)
-      } else {
-        renderSplit(origBitmap, canvas, DR.recipe, DR.intensity, DR.splitX)
+      // 1. Refresh the full-processed offscreen cache if settings/recipe changed
+      if (!DR.processedCache || DR.processedCache.width !== canvas.width) {
+        DR.processedCache = document.createElement('canvas')
       }
-      enableActions()
+      renderToCanvas(origBitmap, DR.processedCache, DR.recipe, DR.intensity)
 
-      // Also update strip thumbnail for active image
+      // 2. Perform actual on-screen compositing (very fast)
+      _renderCanvasOnly()
+
+      // 3. Post-render updates
+      enableActions()
       if (DR.stripCanvases[DR.activeIdx]) {
         renderToCanvas(origBitmap, DR.stripCanvases[DR.activeIdx], DR.recipe, DR.intensity)
       }
-
       showAppliedBadge(DR.recipe.title)
       showProcessing(false)
       cacheRenderedBlob(canvas)
@@ -1991,6 +2059,43 @@ function _doRender() {
       showProcessing(false)
     }
   })
+}
+
+/**
+ * Composites the final view using only canvas-to-canvas draws.
+ * This is extremely fast because it avoids getImageData/pixel manipulation during drag.
+ */
+function _renderCanvasOnly() {
+  const canvas = document.getElementById('canvas-output')
+  if (!DR.processedCache) return
+  const { origBitmap } = DR.images[DR.activeIdx]
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  const w = canvas.width, h = canvas.height
+  const splitPx = Math.floor(w * DR.splitX)
+
+  if (DR.previewMode === 'before') {
+    ctx.drawImage(origBitmap, 0, 0, w, h)
+  } else if (DR.previewMode === 'after') {
+    ctx.drawImage(DR.processedCache, 0, 0, w, h)
+  } else {
+    // Split View: Draw original left, processed right
+    ctx.drawImage(origBitmap, 0, 0, w, h)
+    
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(splitPx, 0, w - splitPx, h)
+    ctx.clip()
+    ctx.drawImage(DR.processedCache, 0, 0, w, h)
+    ctx.restore()
+
+    // Draw split divider line
+    ctx.strokeStyle = '#c8a96e'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(splitPx, 0)
+    ctx.lineTo(splitPx, h)
+    ctx.stroke()
+  }
 }
 
 function renderOriginal(bitmap, canvas) {
