@@ -467,7 +467,17 @@ export default {
       const recipe_id = parseInt(voteMatch[1])
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown'
       const ua = request.headers.get('User-Agent') || ''
-      const hash = btoa(`${ip}:${ua}:${recipe_id}`).slice(0, 64)
+      
+      // Fetch the simulation ID for this recipe to enforce the "1 vote per simulation" rule
+      const { results: rResults } = await env.DB.prepare(
+        'SELECT base_sim_id FROM Recipes WHERE id = ?'
+      ).bind(recipe_id).all()
+      
+      if (!rResults.length) return err('Recipe not found.', 404)
+      const sim_id = rResults[0].base_sim_id
+
+      // Use simulation ID in the hash to prevent voting on other recipes with the same simulation
+      const hash = btoa(`${ip}:${ua}:sim:${sim_id}`).slice(0, 64)
 
       try {
         await env.DB.prepare(
@@ -487,7 +497,7 @@ export default {
 
         return json({ success: true, votes: results[0]?.votes })
       } catch {
-        return json({ success: false, error: 'Already voted on this recipe.' }, 409)
+        return json({ success: false, error: 'You have already voted for a recipe with this simulation profile.' }, 409)
       }
     }
 

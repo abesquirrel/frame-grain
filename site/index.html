@@ -149,6 +149,7 @@ nav button.active { color: var(--accent); }
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
+  overflow-x: hidden;
 }
 .filter-label { font-size: 0.68rem; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-right: 4px; }
 .filter-chip {
@@ -674,7 +675,7 @@ nav button.active { color: var(--accent); }
 }
 .dr-strip-item:hover { border-color: var(--border2); }
 .dr-strip-item.active { border-color: var(--accent); }
-.dr-strip-item canvas { display: block; width: 88px; height: 60px; object-fit: cover; }
+.dr-strip-item canvas { display: block; width: 88px; height: 60px; object-fit: contain; background: #000; }
 .dr-strip-label {
   position: absolute; bottom: 0; left: 0; right: 0;
   font-size: 0.55rem; letter-spacing: 0.04em;
@@ -1552,7 +1553,10 @@ async function voteRecipe(id, btn) {
   localStorage.setItem('fg_votes', JSON.stringify(state.votedIds))
   btn.classList.add('voted')
   const recipe = state.recipes.find(r => r.id === id)
-  if (recipe) recipe.votes++
+  if (recipe) {
+    recipe.votes++
+    // Update count in UI if needed (already handled by countEl above)
+  }
 }
 
 // ─── MODAL ───────────────────────────────────────────────────
