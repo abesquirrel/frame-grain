@@ -3,8 +3,7 @@
 -- Cloudflare D1 / SQLite compatible
 -- =============================================================
 
-PRAGMA foreign_keys = ON;
-PRAGMA journal_mode = WAL;
+
 
 -- -------------------------------------------------------------
 -- SENSORS — five generations, ordered by capability
