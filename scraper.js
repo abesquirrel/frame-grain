@@ -103,13 +103,19 @@ async function getIndexLinks() {
   const { data } = await axios.get(BASE_URL);
   const $ = cheerio.load(data);
   const indices = [];
+  
+  // Fuji X Weekly index uses 'a' tags that often contain the sensor name as text
   $('.entry-content a').each((i, el) => {
-    const text = $(el).text();
+    const text = $(el).text().trim();
     const href = $(el).attr('href');
-    if (text.includes('X-Trans') && href.includes('fujixweekly.com')) {
+    if (href && href.includes('fujixweekly.com') && 
+        (text.includes('X-Trans IV') || text.includes('X-Trans V') || 
+         text.includes('X-Trans 4') || text.includes('X-Trans 5'))) {
       indices.push({ name: text, url: href });
     }
   });
+  
+  console.log(`Found ${indices.length} sensor index pages:`, indices.map(i => i.name));
   return indices;
 }
 
