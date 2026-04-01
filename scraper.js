@@ -39,7 +39,7 @@ async function scrapeRecipe(url, sensorGen) {
 
     const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 2);
     
-    const SIMS = ['Classic Chrome', 'Classic Negative', 'Provia', 'Velvia', 'Astia', 'Acros', 'Monochrome', 'Eterna', 'Bleach Bypass', 'Nostalgic Negative', 'REALA ACE', 'Pro Neg. Hi', 'Pro Neg. Std'];
+    const SIMS = ['Classic Chrome', 'Classic Negative', 'Provia', 'Velvia', 'Astia', 'Acros', 'Monochrome', 'Eterna', 'Bleach Bypass', 'Nostalgic Negative', 'REALA ACE', 'Pro Neg. Hi', 'Pro Neg. Std', 'PRO Neg. Std', 'PRO Neg. Hi'];
 
     lines.forEach(line => {
       const l = line.toLowerCase().trim();
@@ -47,8 +47,8 @@ async function scrapeRecipe(url, sensorGen) {
       
       // Simulation detection
       let foundSim = null;
-      if (l.includes('simulation') && line.includes(':')) {
-           foundSim = line.split(':')[1].trim();
+      if (l.includes('simulation') && (line.includes(':') || line.split(' ').length < 5)) {
+           foundSim = line.split(':').length > 1 ? line.split(':')[1].trim() : line.replace(/simulation/i, '').trim();
       } else {
            // Case where simulation name is just a standalone line or the first line of the block
            for (const s of SIMS) {
@@ -62,33 +62,49 @@ async function scrapeRecipe(url, sensorGen) {
           recipe.sim = foundSim;
       }
 
-      if (l.includes('dynamic range')) {
-          let drVal = line.split(':')[1]?.trim() || line.match(/DR[- ]?\d+/i)?.[0] || 'DR100';
-          drVal = drVal.replace(/[- ]/g, '').toUpperCase();
-          if (drVal.includes('AUTO')) drVal = 'DRAuto';
-          if (!['DR100','DR200','DR400','DRAuto'].includes(drVal)) drVal = 'DR100';
-          recipe.dynamic_range = drVal;
+      if (l.includes('dynamic range')) recipe.dynamic_range = line.split(':')[1]?.trim() || line.match(/DR[- ]?\d+/i)?.[0] || 'DR100';
+      if (recipe.dynamic_range) {
+          recipe.dynamic_range = recipe.dynamic_range.replace(/[- ]/g, '').toUpperCase();
+          if (recipe.dynamic_range.includes('AUTO')) recipe.dynamic_range = 'DRAuto';
+          if (!['DR100','DR200','DR400','DRAuto'].includes(recipe.dynamic_range)) recipe.dynamic_range = 'DR100';
       }
       
+      const grabNum = (text) => {
+          const valPart = text.includes(':') ? text.split(':')[1] : text;
+          const m = valPart.match(/([-+]?\d+\.?\d*)/);
+          return m ? parseFloat(m[0]) : 0;
+      };
+
       const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 
-      if (l.includes('highlight') && (l.includes(':') || l.match(/highlight\s*[:\s]*[-+]\d/))) {
+      if (l.includes('highlight') && (l.includes(':') || l.match(/highlight\s*[:\s]*[-+]/i))) {
           recipe.highlights = clamp(grabNum(line), -2, 4);
       }
-      if (l.includes('shadow') && (l.includes(':') || l.match(/shadow\s*[:\s]*[-+]\d/))) {
+      if (l.includes('shadow') && (l.includes(':') || l.match(/shadow\s*[:\s]*[-+]/i))) {
           recipe.shadows = clamp(grabNum(line), -2, 4);
       }
-      if (l.includes('color') && !l.includes('chrome') && (l.includes(':') || l.match(/color\s*[:\s]*[-+]\d/))) {
+      if (l.includes('color') && !l.includes('chrome') && (l.includes(':') || l.match(/color\s*[:\s]*[-+]/i) || l.match(/color\s*[:\s]*\d/i))) {
           recipe.color = clamp(grabNum(line), -2, 4);
       }
-      if ((l.includes('sharpness') || l.includes('sharpening')) && (l.includes(':') || l.match(/sharp\s*[:\s]*[-+]\d/))) {
+      if ((l.includes('sharpness') || l.includes('sharpening')) && (l.includes(':') || l.match(/sharp\s*[:\s]*[-+]/i) || l.match(/sharp\s*[:\s]*\d/i))) {
           recipe.sharpness = clamp(grabNum(line), -2, 4);
       }
-      if (l.includes('noise reduction') && (l.includes(':') || l.match(/noise\s*[:\s]*[-+]\d/))) {
+      if (l.includes('noise reduction') && (l.includes(':') || l.match(/noise\s*[:\s]*[-+]/i) || l.match(/noise\s*[:\s]*\d/i))) {
           recipe.noise_reduction = clamp(grabNum(line), -2, 4);
       }
-      if (l.includes('clarity') && (l.includes(':') || l.match(/clarity\s*[:\s]*[-+]\d/))) {
+      if (l.includes('clarity') && (l.includes(':') || l.match(/clarity\s*[:\s]*[-+]/i) || l.match(/clarity\s*[:\s]*\d/i))) {
           recipe.clarity = clamp(grabNum(line), -2, 4);
+      }
+      if (l.includes('grain effect')) recipe.grain_effect = line.split(':').length > 1 ? line.split(':')[1].trim() : line.replace(/grain effect/i, '').trim() || 'Off';
+      if (l.includes('grain size')) recipe.grain_size = line.split(':').length > 1 ? line.split(':')[1].trim() : 'Small';
+      if (l.includes('white balance')) recipe.white_balance = line.split(':').length > 1 ? line.split(':')[1].trim() : 'Auto';
+      
+      if (l.includes('red') && l.includes('blue')) {
+        const matches = line.match(/([-+]?\d+)/g);
+        if (matches && matches.length >= 2) {
+          recipe.wb_shift_red = parseInt(matches[matches.length-2]);
+          recipe.wb_shift_blue = parseInt(matches[matches.length-1]);
+        }
       }
       if (l.includes('exposure compensation')) recipe.exposure_compensation = line.split(':')[1]?.trim() || '0 EV';
     });
