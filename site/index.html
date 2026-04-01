@@ -1250,96 +1250,7 @@ let state = {
 }
 
 // ─── MOCK DATA ───────────────────────────────────────────────
-const MOCK_RECIPES = [
-  {
-    id:1, title:'Kodachrome Afternoons', slug:'kodachrome-afternoons',
-    author:'FilmSim_Community', description:'Warm, punchy Kodachrome feel. Works beautifully in golden hour and street photography. The WB shift gives skies a touch of magic.',
-    sim_name:'Classic Chrome', sim_slug:'classic-chrome',
-    min_sensor_name:'X-Trans II', min_sensor_gen:2,
-    look_tags:'["film","warm","street","golden-hour"]',
-    wb_shift_red:4, wb_shift_blue:-5, dynamic_range:'DR200',
-    highlights:-1, shadows:1, color:2, sharpness:1, noise_reduction:-4,
-    grain_effect:null, grain_size:null, color_chrome:null, color_chrome_fx_blue:null, clarity:null,
-    exposure_compensation:'+0.3 EV', votes:42, submitted_at:1700000000,
-  },
-  {
-    id:2, title:'Portra 400 Skin', slug:'portra-400-skin',
-    author:'FilmSim_Community', description:'Flattering portrait film. Overexpose slightly for that classic Portra blown-out pastel look. Works across all X-Trans generations.',
-    sim_name:'Astia/Soft', sim_slug:'astia',
-    min_sensor_name:'X-Trans II', min_sensor_gen:2,
-    look_tags:'["portrait","warm","soft","film"]',
-    wb_shift_red:3, wb_shift_blue:-3, dynamic_range:'DR200',
-    highlights:0, shadows:1, color:-1, sharpness:-1, noise_reduction:-4,
-    grain_effect:null, grain_size:null, color_chrome:null, color_chrome_fx_blue:null, clarity:null,
-    exposure_compensation:'+0.7 EV', votes:38, submitted_at:1700100000,
-  },
-  {
-    id:3, title:'Leica M Look', slug:'leica-m-look',
-    author:'FilmSim_Community', description:'Classic reportage monochrome. High acuity, strong tonal contrast, fine grain. Channel: ACROS Red filter for dramatic skies.',
-    sim_name:'ACROS', sim_slug:'acros',
-    min_sensor_name:'X-Trans III', min_sensor_gen:3,
-    look_tags:'["monochrome","street","film","leica"]',
-    wb_shift_red:0, wb_shift_blue:0, dynamic_range:'DR400',
-    highlights:-1, shadows:3, color:0, sharpness:2, noise_reduction:-4,
-    grain_effect:'Weak', grain_size:null, color_chrome:null, color_chrome_fx_blue:null, clarity:null,
-    exposure_compensation:'0 EV', votes:67, submitted_at:1700200000,
-  },
-  {
-    id:4, title:'Cinematic Teal & Orange', slug:'cinematic-teal-orange',
-    author:'FilmSim_Community', description:'Hollywood blockbuster color grade baked in-camera. Strong Color Chrome for depth in skin tones against the teal background.',
-    sim_name:'Classic Negative', sim_slug:'classic-neg',
-    min_sensor_name:'X-Trans IV', min_sensor_gen:4,
-    look_tags:'["cinematic","teal-orange","street","moody"]',
-    wb_shift_red:2, wb_shift_blue:-6, dynamic_range:'DR400',
-    highlights:-2, shadows:2, color:-1, sharpness:0, noise_reduction:-4,
-    grain_effect:'Weak', grain_size:'Small', color_chrome:'Strong', color_chrome_fx_blue:'Weak', clarity:-1,
-    exposure_compensation:'0 EV', votes:91, submitted_at:1700300000,
-  },
-  {
-    id:5, title:'Expired Superia', slug:'expired-superia',
-    author:'FilmSim_Community', description:'Shifted colors, crushed blacks, and unpredictable grain — the look of truly expired film. Every frame a surprise.',
-    sim_name:'Classic Negative', sim_slug:'classic-neg',
-    min_sensor_name:'X-Trans IV', min_sensor_gen:4,
-    look_tags:'["film","expired","vintage","lo-fi"]',
-    wb_shift_red:5, wb_shift_blue:-8, dynamic_range:'DR200',
-    highlights:1, shadows:-1, color:1, sharpness:-1, noise_reduction:-4,
-    grain_effect:'Strong', grain_size:'Large', color_chrome:'Weak', color_chrome_fx_blue:'Off', clarity:0,
-    exposure_compensation:'+1.0 EV', votes:55, submitted_at:1700400000,
-  },
-  {
-    id:6, title:'REALA Natural Reference', slug:'reala-natural',
-    author:'FilmSim_Community', description:'Let the scene tell the story. Clean, accurate rendering that still feels alive. The REALA ACE simulation at its most honest.',
-    sim_name:'REALA ACE', sim_slug:'reala-ace',
-    min_sensor_name:'X-Trans V', min_sensor_gen:5,
-    look_tags:'["natural","clean","travel","documentary"]',
-    wb_shift_red:1, wb_shift_blue:-2, dynamic_range:'DR200',
-    highlights:0, shadows:0, color:0, sharpness:0, noise_reduction:-2,
-    grain_effect:'Weak', grain_size:'Small', color_chrome:'Off', color_chrome_fx_blue:'Off', clarity:0,
-    exposure_compensation:'0 EV', votes:29, submitted_at:1700500000,
-  },
-  {
-    id:7, title:'CC Street Minimal', slug:'cc-street-minimal',
-    author:'FilmSim_Community', description:'Stripped-down Classic Chrome for street work. No grain needed — let the simulation do the lifting.',
-    sim_name:'Classic Chrome', sim_slug:'classic-chrome',
-    min_sensor_name:'X-Trans II', min_sensor_gen:2,
-    look_tags:'["street","muted","minimal","documentary"]',
-    wb_shift_red:2, wb_shift_blue:-4, dynamic_range:'DR400',
-    highlights:-1, shadows:1, color:-2, sharpness:0, noise_reduction:-4,
-    grain_effect:null, grain_size:null, color_chrome:null, color_chrome_fx_blue:null, clarity:null,
-    exposure_compensation:'+0.3 EV', votes:44, submitted_at:1700600000,
-  },
-  {
-    id:8, title:'Polaroid Faded', slug:'polaroid-faded',
-    author:'FilmSim_Community', description:'Warm faded Polaroid aesthetic. Soft, slightly green-shifted shadows. Great for travel and lifestyle.',
-    sim_name:'Nostalgic Negative', sim_slug:'nostalgic-neg',
-    min_sensor_name:'X-Trans IV', min_sensor_gen:4,
-    look_tags:'["vintage","warm","faded","lifestyle"]',
-    wb_shift_red:4, wb_shift_blue:-4, dynamic_range:'DR200',
-    highlights:2, shadows:-1, color:1, sharpness:-2, noise_reduction:-4,
-    grain_effect:'Strong', grain_size:'Large', color_chrome:'Off', color_chrome_fx_blue:'Off', clarity:-2,
-    exposure_compensation:'+0.7 EV', votes:33, submitted_at:1700700000,
-  },
-]
+const MOCK_RECIPES = [] // Now populated via API when live
 
 // ─── INT FIELDS CONFIG ───────────────────────────────────────
 const INT_FIELDS = [
@@ -1432,8 +1343,29 @@ function setSort(s) {
 }
 
 // ─── RECIPE RENDERING ────────────────────────────────────────
-function renderRecipes() {
-  let recipes = [...MOCK_RECIPES]
+async function renderRecipes() {
+  let recipes = []
+  if (USE_MOCK) {
+    // In actual use, MOCK_RECIPES would be populated or we'd just show empty
+    recipes = []
+  } else {
+    // Fetch from API
+    const params = new URLSearchParams({
+      sort: state.sort,
+      page: state.page,
+      sim: state.filters.sim,
+      sensor: state.filters.sensor,
+      look: state.filters.look,
+    })
+    try {
+      const res = await fetch(`${API_BASE}/api/recipes?${params.toString()}`)
+      const data = await res.json()
+      recipes = data.recipes || []
+      state.recipes = recipes
+    } catch(e) {
+      console.error('Fetch error', e)
+    }
+  }
 
   // Apply filters
   if (state.filters.sim) {
@@ -1531,14 +1463,27 @@ function buildCard(r) {
 }
 
 // ─── VOTING ──────────────────────────────────────────────────
-function voteRecipe(id, btn) {
+async function voteRecipe(id, btn) {
   if (state.votedIds.includes(id)) return
+  
+  if (!USE_MOCK) {
+    try {
+      const res = await fetch(`${API_BASE}/api/recipes/${id}/vote`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'Vote failed'); return }
+      
+      const countEl = btn.querySelector('.vote-count')
+      countEl.textContent = data.votes
+    } catch(e) { alert('Network error'); return }
+  } else {
+    const countEl = btn.querySelector('.vote-count')
+    countEl.textContent = parseInt(countEl.textContent) + 1
+  }
+
   state.votedIds.push(id)
   localStorage.setItem('fg_votes', JSON.stringify(state.votedIds))
-  const countEl = btn.querySelector('.vote-count')
-  countEl.textContent = parseInt(countEl.textContent) + 1
   btn.classList.add('voted')
-  const recipe = MOCK_RECIPES.find(r => r.id === id)
+  const recipe = state.recipes.find(r => r.id === id)
   if (recipe) recipe.votes++
 }
 
@@ -1775,7 +1720,8 @@ function initDarkroom() {
 function buildRecipePickList() {
   const list = document.getElementById('recipe-pick-list')
   list.innerHTML = ''
-  MOCK_RECIPES.forEach((r, i) => {
+  const recipes = state.recipes.length ? state.recipes : []
+  recipes.forEach((r, i) => {
     const item = document.createElement('div')
     item.className = 'recipe-pick-item' + (i === 0 ? ' active' : '')
     item.dataset.idx = i
@@ -1788,12 +1734,15 @@ function buildRecipePickList() {
     item.onclick = () => selectRecipe(i)
     list.appendChild(item)
   })
-  DR.recipe = MOCK_RECIPES[0]
-  showActiveRecipePanel(DR.recipe)
+  if (recipes.length) {
+    DR.recipe = recipes[0]
+    showActiveRecipePanel(DR.recipe)
+  }
 }
 
 function selectRecipe(idx) {
-  DR.recipe = MOCK_RECIPES[idx]
+  const recipes = state.recipes
+  DR.recipe = recipes[idx]
   document.querySelectorAll('.recipe-pick-item').forEach((el, i) => {
     el.classList.toggle('active', i === idx)
   })
