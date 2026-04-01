@@ -2155,10 +2155,11 @@ function renderSplit(bitmap, canvas, recipe, intensity, splitX) {
 }
 
 function fitCanvas(canvas, bitmap) {
-  // Cap at 2400px wide for performance while keeping AR
-  const MAX = 2400
+  // Full resolution — no downsampling. Use native image size for best quality.
+  const MAX = 6000
   let w = bitmap.width, h = bitmap.height
   if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
+  if (h > MAX) { w = Math.round(w * MAX / h); h = MAX }
   if (canvas.width !== w || canvas.height !== h) {
     canvas.width = w; canvas.height = h
   }
@@ -2462,7 +2463,7 @@ function enableActions() {
 }
 
 function cacheRenderedBlob(canvas) {
-  canvas.toBlob(blob => { DR.renderedBlob = blob }, 'image/jpeg', 0.94)
+  canvas.toBlob(blob => { DR.renderedBlob = blob }, 'image/jpeg', 1.0)
 }
 
 function downloadCurrent() {
@@ -2478,7 +2479,7 @@ function downloadCurrent() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href = url; a.download = name; a.click()
     setTimeout(() => URL.revokeObjectURL(url), 5000)
-  }, 'image/jpeg', 0.94)
+  }, 'image/jpeg', 1.0)
 }
 
 function downloadOriginal() {
@@ -2501,7 +2502,7 @@ function downloadAll() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a'); a.href = url; a.download = name; a.click()
         setTimeout(() => URL.revokeObjectURL(url), 5000)
-      }, 'image/jpeg', 0.94)
+      }, 'image/jpeg', 1.0)
     }, i * 600)  // stagger to avoid browser blocking
   })
 }
@@ -2512,14 +2513,14 @@ function openShareModal() {
   const orig   = DR.images[DR.activeIdx]
   if (!canvas || !orig) return
 
-  // Render preview at reduced size for share sheet
+  // Render preview at full canvas resolution for share sheet
   const prev = document.createElement('canvas')
-  const prevW = Math.min(800, canvas.width)
+  const prevW = Math.min(1600, canvas.width)
   const prevH = Math.round(canvas.height * prevW / canvas.width)
   prev.width = prevW; prev.height = prevH
   renderToCanvas(orig.origBitmap, prev, DR.recipe, DR.intensity)
 
-  document.getElementById('share-preview-img').src = prev.toDataURL('image/jpeg', 0.88)
+  document.getElementById('share-preview-img').src = prev.toDataURL('image/jpeg', 1.0)
   document.getElementById('share-meta').innerHTML = `
     <strong style="color:var(--text)">${DR.recipe?.title || 'Custom Recipe'}</strong><br>
     ${DR.recipe?.sim_name} · ${orig.name}<br>
