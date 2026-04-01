@@ -185,6 +185,37 @@ nav button.active { color: var(--accent); }
 }
 .sort-btn.active, .sort-btn:hover { border-color: var(--border2); color: var(--text2); }
 
+/* Mobile dropdown filter bar */
+.filter-mobile {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px 14px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.filter-mobile-sel {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+.filter-mobile-sel:focus { border-color: var(--accent); }
+.filter-mobile-sel.has-filter { border-color: var(--accent); color: var(--accent); background-color: rgba(200,169,110,0.08); }
+
 /* ── RECIPE GRID ─────────────────────────────────────────── */
 #recipes-section { max-width: 1280px; margin: 0 auto; }
 .grid-wrapper {
@@ -710,8 +741,9 @@ nav button.active { color: var(--accent); }
   .stat-num { font-size: 1.85rem; }
   
   .filter-bar { top: 48px; }
-  .filter-inner { padding: 8px 16px; gap: 6px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
-  .filter-chip { padding: 4px 10px; font-size: 0.68rem; }
+  /* On mobile: hide chip bar, show dropdown bar instead */
+  .filter-inner { display: none; }
+  .filter-mobile { display: grid !important; }
   .sort-btns { display: none; }
   
   .grid-wrapper { grid-template-columns: 1fr; gap: 1px; }
@@ -928,6 +960,7 @@ nav button.active { color: var(--accent); }
 <div id="browse-view">
   <!-- Filter bar -->
   <div class="filter-bar">
+    <!-- Desktop chip bar -->
     <div class="filter-inner">
       <span class="filter-label">Gen</span>
       <button class="filter-chip active" data-filter="sensor" data-val="">All</button>
@@ -956,6 +989,43 @@ nav button.active { color: var(--accent); }
         <button class="sort-btn active" id="sort-votes" onclick="setSort('votes')">Popular</button>
         <button class="sort-btn" id="sort-new" onclick="setSort('new')">New</button>
       </div>
+    </div>
+    <!-- Mobile dropdown bar -->
+    <div class="filter-mobile">
+      <select class="filter-mobile-sel" id="mob-sim" onchange="setMobFilter('sim', this)">
+        <option value="">Sim — All</option>
+        <option value="classic-chrome">Classic Chrome</option>
+        <option value="classic-neg">Classic Neg</option>
+        <option value="acros">ACROS</option>
+        <option value="velvia">Velvia</option>
+        <option value="provia">Provia</option>
+        <option value="astia">Astia</option>
+        <option value="eterna">Eterna</option>
+        <option value="nostalgic-neg">Nostalgic Neg</option>
+        <option value="reala-ace">REALA ACE</option>
+        <option value="bleach-bypass">Bleach Bypass</option>
+        <option value="monochrome">Monochrome</option>
+      </select>
+      <select class="filter-mobile-sel" id="mob-sensor" onchange="setMobFilter('sensor', this)">
+        <option value="">Gen — All</option>
+        <option value="5">X-Trans I</option>
+        <option value="4">X-Trans II</option>
+        <option value="3">X-Trans III</option>
+        <option value="2">X-Trans IV</option>
+        <option value="1">X-Trans V</option>
+      </select>
+      <select class="filter-mobile-sel" id="mob-look" onchange="setMobFilter('look', this)">
+        <option value="">Look — All</option>
+        <option value="film">Film</option>
+        <option value="warm">Warm</option>
+        <option value="moody">Moody</option>
+        <option value="monochrome">Monochrome</option>
+        <option value="cinematic">Cinematic</option>
+      </select>
+      <select class="filter-mobile-sel" id="mob-sort" onchange="setMobSort(this)">
+        <option value="votes">Popular</option>
+        <option value="new">New</option>
+      </select>
     </div>
   </div>
 
@@ -1465,6 +1535,19 @@ function setSort(s) {
   document.getElementById('sort-votes').classList.toggle('active', s === 'votes')
   document.getElementById('sort-new').classList.toggle('active', s === 'new')
   renderRecipes()
+}
+
+function setMobFilter(filterType, sel) {
+  const val = sel.value
+  state.filters[filterType] = val
+  state.page = 1
+  // Highlight the select when a filter is active
+  sel.classList.toggle('has-filter', !!val)
+  renderRecipes()
+}
+
+function setMobSort(sel) {
+  setSort(sel.value)
 }
 
 // ─── RECIPE RENDERING ────────────────────────────────────────
