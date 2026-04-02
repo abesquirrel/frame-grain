@@ -280,235 +280,245 @@ function uniqueSlug(base) {
 // ============================================================
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url)
-    const path = url.pathname
-    const method = request.method
+    try {
+      const url = new URL(request.url)
+      const path = url.pathname.replace(/\/$/, '') || '/'
+      const method = request.method
 
-    if (method === 'OPTIONS') return new Response(null, { headers: CORS })
+      if (method === 'OPTIONS') return new Response(null, { headers: CORS })
 
-    // ── GET /api/sensors ───────────────────────────────────
-    if (method === 'GET' && path === '/api/sensors') {
-      const { results } = await env.DB.prepare('SELECT * FROM Sensors ORDER BY gen').all()
-      return json(results)
-    }
-
-    // ── GET /api/simulations ───────────────────────────────
-    if (method === 'GET' && path === '/api/simulations') {
-      const { results } = await env.DB.prepare(
-        'SELECT bs.*, s.name as min_sensor_name, s.gen FROM BaseSimulations bs JOIN Sensors s ON bs.min_sensor_id = s.id ORDER BY s.gen, bs.sim_name'
-      ).all()
-      return json(results)
-    }
-
-    // ── GET /api/fields ────────────────────────────────────
-    if (method === 'GET' && path === '/api/fields') {
-      const { results } = await env.DB.prepare(
-        'SELECT rf.*, s.name as introduced_in_name FROM RecipeFields rf JOIN Sensors s ON rf.introduced_in_sensor_id = s.id ORDER BY s.gen, rf.id'
-      ).all()
-      return json(results)
-    }
-
-    // ── GET /api/recipes ───────────────────────────────────
-    if (method === 'GET' && path === '/api/recipes') {
-      const params = url.searchParams
-      const sim    = params.get('sim')
-      const sensor = params.get('sensor')
-      const look   = params.get('look')
-      const sort   = params.get('sort') || 'votes'
-      const page   = Math.max(1, parseInt(params.get('page') || '1'))
-      const limit  = Math.min(48, parseInt(params.get('limit') || '24'))
-      const offset = (page - 1) * limit
-
-      // Cache key
-      const cacheKey = `recipes:${sim}:${sensor}:${look}:${sort}:${page}:${limit}`
-      const cached = await env.KV?.get(cacheKey)
-      if (cached) return json(JSON.parse(cached))
-
-      let where = ['r.approved = 1']
-      const bindings = []
-
-      if (sim) {
-        where.push('bs.slug = ?')
-        bindings.push(sim)
-      }
-      if (sensor) {
-        where.push('r.min_sensor_id <= ?')
-        bindings.push(parseInt(sensor))
-      }
-      if (look) {
-        where.push("r.look_tags LIKE ?")
-        bindings.push(`%"${look}"%`)
+      // ── ROOT ENDPOINT ──────────────────────────────────────
+      if (method === 'GET' && path === '/') {
+        return json({ success: true, message: 'Fujifilm Recipes API is live.' })
       }
 
-      const orderCol = sort === 'new' ? 'r.submitted_at DESC' : 'r.votes DESC'
+      // ── GET /api/sensors ───────────────────────────────────
+      if (method === 'GET' && path === '/api/sensors') {
+        const { results } = await env.DB.prepare('SELECT * FROM Sensors ORDER BY gen').all()
+        return json(results)
+      }
 
-      const query = `
-        SELECT r.id, r.title, r.slug, r.author, r.description,
-               bs.sim_name, bs.slug as sim_slug,
-               s.name as min_sensor_name, s.gen as min_sensor_gen,
-               r.look_tags, r.votes, r.submitted_at,
-               r.wb_shift_red, r.wb_shift_blue, r.dynamic_range,
-               r.highlights, r.shadows, r.color, r.sharpness, r.noise_reduction,
-               r.grain_effect, r.grain_size, r.color_chrome, r.color_chrome_fx_blue,
-               r.clarity, r.exposure_compensation
-        FROM Recipes r
-        JOIN BaseSimulations bs ON r.base_sim_id = bs.id
-        JOIN Sensors s ON r.min_sensor_id = s.id
-        WHERE ${where.join(' AND ')}
-        ORDER BY ${orderCol}
-        LIMIT ? OFFSET ?
-      `
+      // ── GET /api/simulations ───────────────────────────────
+      if (method === 'GET' && path === '/api/simulations') {
+        const { results } = await env.DB.prepare(
+          'SELECT bs.*, s.name as min_sensor_name, s.gen FROM BaseSimulations bs JOIN Sensors s ON bs.min_sensor_id = s.id ORDER BY s.gen, bs.sim_name'
+        ).all()
+        return json(results)
+      }
 
-      const countQuery = `
-        SELECT COUNT(*) as total FROM Recipes r
-        JOIN BaseSimulations bs ON r.base_sim_id = bs.id
-        WHERE ${where.join(' AND ')}
-      `
+      // ── GET /api/fields ────────────────────────────────────
+      if (method === 'GET' && path === '/api/fields') {
+        const { results } = await env.DB.prepare(
+          'SELECT rf.*, s.name as introduced_in_name FROM RecipeFields rf JOIN Sensors s ON rf.introduced_in_sensor_id = s.id ORDER BY s.gen, rf.id'
+        ).all()
+        return json(results)
+      }
 
-      bindings.push(limit, offset)
+      // ── GET /api/recipes ───────────────────────────────────
+      if (method === 'GET' && path === '/api/recipes') {
+        const params = url.searchParams
+        const sim    = params.get('sim')
+        const sensor = params.get('sensor')
+        const look   = params.get('look')
+        const sort   = params.get('sort') || 'votes'
+        const page   = Math.max(1, parseInt(params.get('page') || '1'))
+        const limit  = Math.min(48, parseInt(params.get('limit') || '24'))
+        const offset = (page - 1) * limit
 
-      const [{ results }, { results: countRes }] = await Promise.all([
-        env.DB.prepare(query).bind(...bindings).all(),
-        env.DB.prepare(countQuery).bind(...bindings.slice(0, -2)).all()
-      ])
+        // Cache key
+        const cacheKey = `recipes:${sim}:${sensor}:${look}:${sort}:${page}:${limit}`
+        const cached = await env.KV?.get(cacheKey)
+        if (cached) return json(JSON.parse(cached))
 
-      const payload = {
-        recipes: results,
-        pagination: {
-          page, limit,
-          total: countRes[0].total,
-          pages: Math.ceil(countRes[0].total / limit)
+        let where = ['r.approved = 1']
+        const bindings = []
+
+        if (sim) {
+          where.push('bs.slug = ?')
+          bindings.push(sim)
+        }
+        if (sensor) {
+          where.push('r.min_sensor_id <= ?')
+          bindings.push(parseInt(sensor))
+        }
+        if (look) {
+          where.push("r.look_tags LIKE ?")
+          bindings.push(`%"${look}"%`)
+        }
+
+        const orderCol = sort === 'new' ? 'r.submitted_at DESC' : 'r.votes DESC'
+
+        const query = `
+          SELECT r.id, r.title, r.slug, r.author, r.description,
+                 bs.sim_name, bs.slug as sim_slug,
+                 s.name as min_sensor_name, s.gen as min_sensor_gen,
+                 r.look_tags, r.votes, r.submitted_at,
+                 r.wb_shift_red, r.wb_shift_blue, r.dynamic_range,
+                 r.highlights, r.shadows, r.color, r.sharpness, r.noise_reduction,
+                 r.grain_effect, r.grain_size, r.color_chrome, r.color_chrome_fx_blue,
+                 r.clarity, r.exposure_compensation
+          FROM Recipes r
+          JOIN BaseSimulations bs ON r.base_sim_id = bs.id
+          JOIN Sensors s ON r.min_sensor_id = s.id
+          WHERE ${where.join(' AND ')}
+          ORDER BY ${orderCol}
+          LIMIT ? OFFSET ?
+        `
+
+        const countQuery = `
+          SELECT COUNT(*) as total FROM Recipes r
+          JOIN BaseSimulations bs ON r.base_sim_id = bs.id
+          WHERE ${where.join(' AND ')}
+        `
+
+        bindings.push(limit, offset)
+
+        const [{ results }, { results: countRes }] = await Promise.all([
+          env.DB.prepare(query).bind(...bindings).all(),
+          env.DB.prepare(countQuery).bind(...bindings.slice(0, -2)).all()
+        ])
+
+        const payload = {
+          recipes: results,
+          pagination: {
+            page, limit,
+            total: countRes[0].total,
+            pages: Math.ceil(countRes[0].total / limit)
+          }
+        }
+
+        await env.KV?.put(cacheKey, JSON.stringify(payload), { expirationTtl: 60 })
+        return json(payload)
+      }
+
+      // ── GET /api/recipes/:id ───────────────────────────────
+      const singleMatch = path.match(/^\/api\/recipes\/([a-z0-9-]+)$/)
+      if (method === 'GET' && singleMatch) {
+        const idOrSlug = singleMatch[1]
+        const isNumeric = /^\d+$/.test(idOrSlug)
+        const query = isNumeric
+          ? 'SELECT r.*, bs.sim_name, bs.slug as sim_slug, s.name as min_sensor_name, s.gen FROM Recipes r JOIN BaseSimulations bs ON r.base_sim_id = bs.id JOIN Sensors s ON r.min_sensor_id = s.id WHERE r.id = ? AND r.approved = 1'
+          : 'SELECT r.*, bs.sim_name, bs.slug as sim_slug, s.name as min_sensor_name, s.gen FROM Recipes r JOIN BaseSimulations bs ON r.base_sim_id = bs.id JOIN Sensors s ON r.min_sensor_id = s.id WHERE r.slug = ? AND r.approved = 1'
+        const { results } = await env.DB.prepare(query).bind(idOrSlug).all()
+        if (!results.length) return err('Recipe not found.', 404)
+        return json(results[0])
+      }
+
+      // ── POST /api/recipes/validate ─────────────────────────
+      if (method === 'POST' && path === '/api/recipes/validate') {
+        const body = await request.json()
+        const result = validateRecipe(body)
+        return json(result)
+      }
+
+      // ── POST /api/recipes/submit ───────────────────────────
+      if (method === 'POST' && path === '/api/recipes/submit') {
+        const body = await request.json()
+
+        if (!body.title || body.title.length < 3) return err('Title must be at least 3 characters.')
+        if (!body.author) body.author = 'Anonymous'
+        if (!body.base_sim) return err('base_sim is required.')
+
+        const validation = validateRecipe(body)
+        if (!validation.valid) {
+          return json({ success: false, errors: validation.errors, warnings: validation.warnings }, 422)
+        }
+
+        // Resolve sim ID
+        const { results: simRes } = await env.DB.prepare(
+          'SELECT id FROM BaseSimulations WHERE slug = ?'
+        ).bind(body.base_sim).all()
+        if (!simRes.length) return err(`Unknown simulation slug: ${body.base_sim}`)
+        const sim_id = simRes[0].id
+        const sensor_id = validation.min_sensor
+
+        const slug = uniqueSlug(body.title)
+
+        await env.DB.prepare(`
+          INSERT INTO Recipes (
+            title, slug, author, description,
+            base_sim_id, min_sensor_id, look_tags,
+            wb_preset, wb_shift_red, wb_shift_blue,
+            dynamic_range, highlights, shadows,
+            color, sharpness, noise_reduction,
+            grain_effect, grain_size,
+            color_chrome, color_chrome_fx_blue, clarity,
+            bw_adj_warm_cool, bw_adj_magenta_green,
+            exposure_compensation, approved
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)
+        `).bind(
+          body.title, slug, body.author, body.description || '',
+          sim_id, sensor_id, JSON.stringify(body.look_tags || []),
+          body.wb_preset || 'Auto', body.wb_shift_red || 0, body.wb_shift_blue || 0,
+          body.dynamic_range || 'DR100', body.highlights || 0, body.shadows || 0,
+          body.color || 0, body.sharpness || 0, body.noise_reduction || 0,
+          body.grain_effect || null, body.grain_size || null,
+          body.color_chrome || null, body.color_chrome_fx_blue || null, body.clarity || null,
+          body.bw_adj_warm_cool || null, body.bw_adj_magenta_green || null,
+          body.exposure_compensation || '0 EV'
+        ).run()
+
+        return json({
+          success: true,
+          message: 'Recipe submitted for review. It will appear once approved.',
+          slug,
+          warnings: validation.warnings
+        }, 201)
+      }
+
+      // ── POST /api/recipes/:id/vote ─────────────────────────
+      const voteMatch = path.match(/^\/api\/recipes\/(\d+)\/vote$/)
+      if (method === 'POST' && voteMatch) {
+        const recipe_id = parseInt(voteMatch[1])
+        const ip = request.headers.get('CF-Connecting-IP') || 'unknown'
+        const ua = request.headers.get('User-Agent') || ''
+        
+        // Fetch the simulation ID for this recipe to enforce the "1 vote per simulation" rule
+        const { results: rResults } = await env.DB.prepare(
+          'SELECT base_sim_id FROM Recipes WHERE id = ?'
+        ).bind(recipe_id).all()
+        
+        if (!rResults.length) return err('Recipe not found.', 404)
+        const sim_id = rResults[0].base_sim_id
+
+        // Use simulation ID in the hash to prevent voting on other recipes with the same simulation
+        const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${ip}:${ua}:sim:${sim_id}`))))
+          .map(b => b.toString(16).padStart(2, '0')).join('')
+
+        try {
+          await env.DB.prepare(
+            'INSERT INTO Votes (recipe_id, voter_hash) VALUES (?, ?)'
+          ).bind(recipe_id, hash).run()
+
+          await env.DB.prepare(
+            'UPDATE Recipes SET votes = votes + 1 WHERE id = ?'
+          ).bind(recipe_id).run()
+
+          // Invalidate cache broadly
+          await env.KV?.delete('recipes:::::votes:1:24')
+
+          const { results } = await env.DB.prepare(
+            'SELECT votes FROM Recipes WHERE id = ?'
+          ).bind(recipe_id).all()
+
+          return json({ success: true, votes: results[0]?.votes })
+        } catch {
+          return json({ success: false, error: 'You have already voted for a recipe with this simulation profile.' }, 409)
         }
       }
 
-      await env.KV?.put(cacheKey, JSON.stringify(payload), { expirationTtl: 60 })
-      return json(payload)
-    }
-
-    // ── GET /api/recipes/:id ───────────────────────────────
-    const singleMatch = path.match(/^\/api\/recipes\/([a-z0-9-]+)$/)
-    if (method === 'GET' && singleMatch) {
-      const idOrSlug = singleMatch[1]
-      const isNumeric = /^\d+$/.test(idOrSlug)
-      const query = isNumeric
-        ? 'SELECT r.*, bs.sim_name, bs.slug as sim_slug, s.name as min_sensor_name, s.gen FROM Recipes r JOIN BaseSimulations bs ON r.base_sim_id = bs.id JOIN Sensors s ON r.min_sensor_id = s.id WHERE r.id = ? AND r.approved = 1'
-        : 'SELECT r.*, bs.sim_name, bs.slug as sim_slug, s.name as min_sensor_name, s.gen FROM Recipes r JOIN BaseSimulations bs ON r.base_sim_id = bs.id JOIN Sensors s ON r.min_sensor_id = s.id WHERE r.slug = ? AND r.approved = 1'
-      const { results } = await env.DB.prepare(query).bind(idOrSlug).all()
-      if (!results.length) return err('Recipe not found.', 404)
-      return json(results[0])
-    }
-
-    // ── POST /api/recipes/validate ─────────────────────────
-    if (method === 'POST' && path === '/api/recipes/validate') {
-      const body = await request.json()
-      const result = validateRecipe(body)
-      return json(result)
-    }
-
-    // ── POST /api/recipes/submit ───────────────────────────
-    if (method === 'POST' && path === '/api/recipes/submit') {
-      const body = await request.json()
-
-      if (!body.title || body.title.length < 3) return err('Title must be at least 3 characters.')
-      if (!body.author) body.author = 'Anonymous'
-      if (!body.base_sim) return err('base_sim is required.')
-
-      const validation = validateRecipe(body)
-      if (!validation.valid) {
-        return json({ success: false, errors: validation.errors, warnings: validation.warnings }, 422)
+      // ── POST /api/recipes/translate ────────────────────────
+      if (method === 'POST' && path === '/api/recipes/translate') {
+        const body = await request.json()
+        if (!body.recipe || !body.target_gen) return err('recipe and target_gen required.')
+        const result = translateRecipe(body.recipe, body.target_gen)
+        return json(result)
       }
 
-      // Resolve sim ID
-      const { results: simRes } = await env.DB.prepare(
-        'SELECT id FROM BaseSimulations WHERE slug = ?'
-      ).bind(body.base_sim).all()
-      if (!simRes.length) return err(`Unknown simulation slug: ${body.base_sim}`)
-      const sim_id = simRes[0].id
-      const sensor_id = validation.min_sensor
-
-      const slug = uniqueSlug(body.title)
-
-      await env.DB.prepare(`
-        INSERT INTO Recipes (
-          title, slug, author, description,
-          base_sim_id, min_sensor_id, look_tags,
-          wb_preset, wb_shift_red, wb_shift_blue,
-          dynamic_range, highlights, shadows,
-          color, sharpness, noise_reduction,
-          grain_effect, grain_size,
-          color_chrome, color_chrome_fx_blue, clarity,
-          bw_adj_warm_cool, bw_adj_magenta_green,
-          exposure_compensation, approved
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)
-      `).bind(
-        body.title, slug, body.author, body.description || '',
-        sim_id, sensor_id, JSON.stringify(body.look_tags || []),
-        body.wb_preset || 'Auto', body.wb_shift_red || 0, body.wb_shift_blue || 0,
-        body.dynamic_range || 'DR100', body.highlights || 0, body.shadows || 0,
-        body.color || 0, body.sharpness || 0, body.noise_reduction || 0,
-        body.grain_effect || null, body.grain_size || null,
-        body.color_chrome || null, body.color_chrome_fx_blue || null, body.clarity || null,
-        body.bw_adj_warm_cool || null, body.bw_adj_magenta_green || null,
-        body.exposure_compensation || '0 EV'
-      ).run()
-
-      return json({
-        success: true,
-        message: 'Recipe submitted for review. It will appear once approved.',
-        slug,
-        warnings: validation.warnings
-      }, 201)
+      return err('Not found.', 404)
+    } catch (e) {
+      console.error(e)
+      return err('Internal Server Error: ' + e.message, 500)
     }
-
-    // ── POST /api/recipes/:id/vote ─────────────────────────
-    const voteMatch = path.match(/^\/api\/recipes\/(\d+)\/vote$/)
-    if (method === 'POST' && voteMatch) {
-      const recipe_id = parseInt(voteMatch[1])
-      const ip = request.headers.get('CF-Connecting-IP') || 'unknown'
-      const ua = request.headers.get('User-Agent') || ''
-      
-      // Fetch the simulation ID for this recipe to enforce the "1 vote per simulation" rule
-      const { results: rResults } = await env.DB.prepare(
-        'SELECT base_sim_id FROM Recipes WHERE id = ?'
-      ).bind(recipe_id).all()
-      
-      if (!rResults.length) return err('Recipe not found.', 404)
-      const sim_id = rResults[0].base_sim_id
-
-      // Use simulation ID in the hash to prevent voting on other recipes with the same simulation
-      const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${ip}:${ua}:sim:${sim_id}`))))
-        .map(b => b.toString(16).padStart(2, '0')).join('')
-
-      try {
-        await env.DB.prepare(
-          'INSERT INTO Votes (recipe_id, voter_hash) VALUES (?, ?)'
-        ).bind(recipe_id, hash).run()
-
-        await env.DB.prepare(
-          'UPDATE Recipes SET votes = votes + 1 WHERE id = ?'
-        ).bind(recipe_id).run()
-
-        // Invalidate cache broadly
-        await env.KV?.delete('recipes:::::votes:1:24')
-
-        const { results } = await env.DB.prepare(
-          'SELECT votes FROM Recipes WHERE id = ?'
-        ).bind(recipe_id).all()
-
-        return json({ success: true, votes: results[0]?.votes })
-      } catch {
-        return json({ success: false, error: 'You have already voted for a recipe with this simulation profile.' }, 409)
-      }
-    }
-
-    // ── POST /api/recipes/translate ────────────────────────
-    if (method === 'POST' && path === '/api/recipes/translate') {
-      const body = await request.json()
-      if (!body.recipe || !body.target_gen) return err('recipe and target_gen required.')
-      const result = translateRecipe(body.recipe, body.target_gen)
-      return json(result)
-    }
-
-    return err('Not found.', 404)
   }
 }
