@@ -106,14 +106,13 @@ function validateRecipe(recipe) {
 
   for (const [field, msg] of Object.entries(iv4Fields)) {
     const val = recipe[field]
-    if (val !== undefined && val !== null && val !== 'Off' && val !== 0) {
-      errors.push(msg)
+    if (val !== undefined && val !== null && val !== 'Off' && val !== 0 && val !== '') {
       min_sensor = Math.max(min_sensor, 4)
     }
   }
   for (const [field, msg] of Object.entries(iii3Fields)) {
     const val = recipe[field]
-    if (val !== undefined && val !== null && val !== 'Off') {
+    if (val !== undefined && val !== null && val !== 'Off' && val !== '') {
       min_sensor = Math.max(min_sensor, 3)
     }
   }
@@ -477,7 +476,8 @@ export default {
       const sim_id = rResults[0].base_sim_id
 
       // Use simulation ID in the hash to prevent voting on other recipes with the same simulation
-      const hash = btoa(`${ip}:${ua}:sim:${sim_id}`).slice(0, 64)
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${ip}:${ua}:sim:${sim_id}`))))
+        .map(b => b.toString(16).padStart(2, '0')).join('')
 
       try {
         await env.DB.prepare(

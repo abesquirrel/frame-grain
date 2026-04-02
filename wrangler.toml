@@ -14,10 +14,6 @@ database_id = "440b5e35-840f-4c4d-98a6-6cace7f92ebc"  # Fill after: wrangler d1 
 binding = "KV"
 id = "9ade42eaaae74ae0ac302c05d061e3b4"          # Fill after: wrangler kv:namespace create RECIPE_CACHE
 
-# ─── Pages / Static Site ──────────────────────────────────
-[site]
-bucket = "./site"                    # Output dir for static assets
-
 # ─── Environments ─────────────────────────────────────────
 [env.production]
 name = "fujifilm-recipes-api-prod"

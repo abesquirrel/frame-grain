@@ -1596,7 +1596,7 @@ async function renderRecipes(append = false) {
     const res = await fetch(`${API_BASE}/api/recipes?${params.toString()}`)
     const data = await res.json()
     recipes = data.recipes || []
-    state.total = data.total || recipes.length
+    state.total = data.pagination?.total || data.total || recipes.length
 
     if (append) {
       state.recipes = [...state.recipes, ...recipes]
