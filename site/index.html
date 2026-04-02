@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>FRAMEGRAIN — Fujifilm Film Simulation Recipes</title>
 <meta name="description" content="Community-curated Fujifilm film simulation recipes for every X-Trans sensor generation.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -147,9 +147,14 @@ nav button.active { color: var(--accent); }
   padding: 12px 24px;
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  overflow-x: hidden;
+  overflow-x: auto;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.filter-inner::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome, Safari and Opera */
 }
 .filter-label { font-size: 0.68rem; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-right: 4px; }
 .filter-chip {
@@ -721,9 +726,9 @@ nav button.active { color: var(--accent); }
 }
 
 @media (max-width: 860px) {
-  .darkroom-layout { grid-template-columns: 1fr; }
-  .dr-panel { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
-  .dr-stage { padding: 20px 12px; }
+  .darkroom-layout { grid-template-columns: 1fr; display: flex; flex-direction: column; }
+  .dr-stage { order: -1; padding: 20px 12px; min-height: auto; }
+  .dr-panel { position: static; max-height: none; border-right: none; border-top: 1px solid var(--border); }
   .dr-panel-section { padding: 16px; }
 }
 
@@ -743,7 +748,7 @@ nav button.active { color: var(--accent); }
   .filter-bar { top: 48px; }
   /* On mobile: hide chip bar, show dropdown bar instead */
   .filter-inner { display: none; }
-  .filter-mobile { display: grid !important; }
+  .filter-mobile { display: grid !important; grid-template-columns: 1fr 1fr; }
   .sort-btns { display: none; }
   
   .grid-wrapper { grid-template-columns: 1fr; gap: 1px; }
@@ -763,16 +768,22 @@ nav button.active { color: var(--accent); }
   .dr-actions { flex-direction: column; align-items: stretch; }
   .dr-filename { margin-left: 0; text-align: center; margin-top: 4px; }
   
-  body { padding-bottom: 64px; } /* Space for mobile nav */
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); } /* Space for mobile nav */
 }
 
 .mobile-nav {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  height: 64px; background: rgba(12,11,9,0.95);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border);
-  display: none; align-items: center; justify-content: space-around;
-  padding: 0 12px; z-index: 1000;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(64px + env(safe-area-inset-bottom));
+  background: var(--bg); /* Solid background for more "pinned" feel */
+  border-top: 1px solid var(--border2);
+  display: none;
+  align-items: flex-start; /* Align to top of the bar */
+  justify-content: space-around;
+  padding: 12px 12px env(safe-area-inset-bottom);
+  z-index: 1000;
 }
 .m-nav-btn {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -780,6 +791,7 @@ nav button.active { color: var(--accent); }
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
   text-transform: uppercase; cursor: pointer; transition: 0.2s;
   flex: 1;
+  -webkit-tap-highlight-color: transparent;
 }
 .m-nav-btn.active { color: var(--accent); }
 .m-nav-icon { font-size: 1.4rem; line-height: 1; }
@@ -993,7 +1005,7 @@ nav button.active { color: var(--accent); }
     <!-- Mobile dropdown bar -->
     <div class="filter-mobile">
       <select class="filter-mobile-sel" id="mob-sim" onchange="setMobFilter('sim', this)">
-        <option value="">Sim — All</option>
+        <option value="">Simulation — All</option>
         <option value="classic-chrome">Classic Chrome</option>
         <option value="classic-neg">Classic Neg</option>
         <option value="acros">ACROS</option>
@@ -1007,7 +1019,7 @@ nav button.active { color: var(--accent); }
         <option value="monochrome">Monochrome</option>
       </select>
       <select class="filter-mobile-sel" id="mob-sensor" onchange="setMobFilter('sensor', this)">
-        <option value="">Gen — All</option>
+        <option value="">Generation — All</option>
         <option value="5">X-Trans I</option>
         <option value="4">X-Trans II</option>
         <option value="3">X-Trans III</option>
@@ -1551,51 +1563,58 @@ function setMobSort(sel) {
 }
 
 // ─── RECIPE RENDERING ────────────────────────────────────────
-async function renderRecipes() {
+async function renderRecipes(append = false) {
   let recipes = []
-  if (USE_MOCK) {
-    // In actual use, MOCK_RECIPES would be populated or we'd just show empty
-    recipes = []
-  } else {
-    // Fetch from API
-    const params = new URLSearchParams({
-      sort: state.sort,
-      page: state.page,
-      sim: state.filters.sim,
-      sensor: state.filters.sensor,
-      look: state.filters.look,
-    })
-    try {
-      const res = await fetch(`${API_BASE}/api/recipes?${params.toString()}`)
-      const data = await res.json()
-      recipes = data.recipes || []
-      state.recipes = recipes
-    } catch(e) {
-      console.error('Fetch error', e)
-    }
-  }
-
-  // Apply filters
-  if (state.filters.sim) {
-    recipes = recipes.filter(r => r.sim_slug === state.filters.sim)
-  }
-  if (state.filters.sensor) {
-    recipes = recipes.filter(r => r.min_sensor_gen <= parseInt(state.filters.sensor))
-  }
-  if (state.filters.look) {
-    recipes = recipes.filter(r => {
-      try { return JSON.parse(r.look_tags).includes(state.filters.look) } catch { return false }
-    })
-  }
-  // Sort
-  recipes.sort((a,b) => state.sort === 'votes' ? b.votes - a.votes : b.submitted_at - a.submitted_at)
-
-  document.getElementById('stat-recipes').textContent = recipes.length
-
   const grid = document.getElementById('recipe-grid')
-  grid.innerHTML = ''
+  const loadMoreWrap = document.getElementById('load-more-wrap')
 
-  if (!recipes.length) {
+  if (!append) {
+    grid.innerHTML = `
+      <div class="skeleton-card" style="height:240px">
+        <div class="skel" style="height:10px;width:60%;margin-bottom:16px;"></div>
+        <div class="skel" style="height:20px;width:80%;margin-bottom:8px;"></div>
+        <div class="skel" style="height:10px;width:90%;margin-bottom:16px;"></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          <div class="skel" style="height:44px;border-radius:6px;"></div>
+          <div class="skel" style="height:44px;border-radius:6px;"></div>
+          <div class="skel" style="height:44px;border-radius:6px;"></div>
+        </div>
+      </div>`
+    loadMoreWrap.style.display = 'none'
+  }
+
+  // Fetch from API
+  const params = new URLSearchParams({
+    sort: state.sort,
+    page: state.page,
+    sim: state.filters.sim,
+    sensor: state.filters.sensor,
+    look: state.filters.look,
+  })
+
+  try {
+    const res = await fetch(`${API_BASE}/api/recipes?${params.toString()}`)
+    const data = await res.json()
+    recipes = data.recipes || []
+    state.total = data.total || recipes.length
+
+    if (append) {
+      state.recipes = [...state.recipes, ...recipes]
+    } else {
+      state.recipes = recipes
+      grid.innerHTML = ''
+    }
+  } catch(e) {
+    console.error('Fetch error', e)
+    if (!append) {
+      grid.innerHTML = '<div class="empty-state"><div class="empty-msg">Error loading recipes. Please try again.</div></div>'
+    }
+    return
+  }
+
+  document.getElementById('stat-recipes').textContent = state.total || state.recipes.length
+
+  if (!state.recipes.length) {
     grid.innerHTML = `<div class="empty-state">
       <span class="empty-icon">⊘</span>
       <div class="empty-msg">No recipes match this filter.</div>
@@ -1603,9 +1622,24 @@ async function renderRecipes() {
     return
   }
 
-  recipes.forEach(r => {
-    grid.appendChild(buildCard(r))
-  })
+  if (append) {
+    recipes.forEach(r => grid.appendChild(buildCard(r)))
+  } else {
+    state.recipes.forEach(r => grid.appendChild(buildCard(r)))
+  }
+
+  // Show/hide load more
+  loadMoreWrap.style.display = state.recipes.length < state.total ? 'block' : 'none'
+}
+
+async function loadMore() {
+  state.page++
+  const btn = document.getElementById('load-more-btn')
+  btn.disabled = true
+  btn.textContent = 'Loading...'
+  await renderRecipes(true)
+  btn.disabled = false
+  btn.textContent = 'Load more recipes'
 }
 
 function fmtVal(v) {
@@ -1648,7 +1682,7 @@ function buildCard(r) {
       <div class="card-sensor">${genLabel}+</div>
     </div>
     <div class="card-title">${r.title}</div>
-    <div class="card-desc">${r.description}</div>
+    <div class="card-desc">${r.description || ''}</div>
     <div class="card-settings">
       <div class="setting-pill"><span class="s-label">WB R/B</span><span class="s-val">${fmtVal(r.wb_shift_red)} / ${fmtVal(r.wb_shift_blue)}</span></div>
       <div class="setting-pill"><span class="s-label">DR</span><span class="s-val">${r.dynamic_range}</span></div>
@@ -2904,7 +2938,7 @@ function tryRecipeInDarkroom() {
   closeModalDirect()
   showView('darkroom')
   // Select that recipe in the pick list
-  const idx = MOCK_RECIPES.findIndex(m => m.id === r.id)
+  const idx = state.recipes.findIndex(m => m.id === r.id)
   if (idx >= 0) selectRecipe(idx)
 }
 
@@ -2914,7 +2948,6 @@ document.addEventListener('keydown', e => {
 
 // ─── INIT ────────────────────────────────────────────────────
 renderRecipes()
-document.getElementById('stat-recipes').textContent = MOCK_RECIPES.length
 </script>
 </body>
 </html>
