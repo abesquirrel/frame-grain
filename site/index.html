@@ -1438,8 +1438,8 @@ nav button.active { color: var(--accent); }
 
 <script>
 // ─── CONFIG ─────────────────────────────────────────────────
-// In production, point this to your Cloudflare Worker URL
-const API_BASE = 'https://frame-grain.paulrojas.quest'
+// We use an empty string so the browser automatically uses the current domain (e.g. your .workers.dev URL or your custom domain).
+const API_BASE = ''
 const USE_MOCK = false
 
 // ─── STATE ──────────────────────────────────────────────────
